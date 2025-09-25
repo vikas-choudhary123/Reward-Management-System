@@ -36,9 +36,10 @@ interface Consumer {
 interface BarcodeDisplayProps {
   code: string
   formLink: string
+  reward: number // Add reward prop
 }
 
-const BarcodeDisplay = ({ code, formLink }: BarcodeDisplayProps) => {
+const BarcodeDisplay = ({ code, formLink, reward }: BarcodeDisplayProps) => {
   return (
     <div className="flex flex-col items-center p-6 border border-amber-200 rounded-2xl bg-gradient-to-br from-amber-50/50 to-white shadow-xl shadow-amber-500/10">
       <div className="mb-4 p-3 bg-white rounded-xl shadow-sm border border-gray-100">
@@ -46,10 +47,10 @@ const BarcodeDisplay = ({ code, formLink }: BarcodeDisplayProps) => {
           <QRCodeSVG 
             value={formLink} 
             size={200}
-            level="H" // High error correction
+            level="H"
             includeMargin={true}
             renderAs="svg"
-            fgColor="#d97706" // Amber color
+            fgColor="#d97706"
             bgColor="#ffffff"
           />
         </div>
@@ -59,7 +60,7 @@ const BarcodeDisplay = ({ code, formLink }: BarcodeDisplayProps) => {
         {formLink}
       </div>
       <div className="text-sm text-emerald-700 font-bold bg-emerald-100 px-4 py-2 rounded-full border border-emerald-300">
-        🎁 ₹100 Reward
+        🎁 ₹{reward} Reward {/* Change from hardcoded ₹100 to dynamic reward */}
       </div>
     </div>
   )
@@ -529,8 +530,13 @@ const downloadBarcodes = (): void => {
                 <h3 className="text-lg font-semibold mb-6 text-gray-800">Premium Barcode View</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredCoupons.map((coupon) => (
-                    <BarcodeDisplay key={coupon.code} code={coupon.code} formLink={getFormLink(coupon.code)} />
-                  ))}
+  <BarcodeDisplay 
+    key={coupon.code} 
+    code={coupon.code} 
+    formLink={getFormLink(coupon.code)} 
+    reward={coupon.reward} // Pass the actual reward amount
+  />
+))}
                 </div>
               </div>
             )}
