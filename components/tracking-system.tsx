@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, ChangeEvent } from "react"
+import { useState, useEffect, type ChangeEvent } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Search, Download, RefreshCw, QrCode, Eye, Loader2 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec"
+const GOOGLE_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbzfcdevw5wZLelGrr2tNvN6-wU_OmXdfaDR6tFsOlwSQtd9TAqw9qUv0lVjzBDF-6iO/exec"
 const COUPONS_SHEET = "Coupons"
 const CONSUMERS_SHEET = "Coupons"
 
@@ -36,17 +37,17 @@ interface Consumer {
 interface BarcodeDisplayProps {
   code: string
   formLink: string
-  reward: number // Add reward prop
+  reward: number
 }
 
 const BarcodeDisplay = ({ code, formLink, reward }: BarcodeDisplayProps) => {
   return (
-    <div className="flex flex-col items-center p-6 border border-amber-200 rounded-2xl bg-gradient-to-br from-amber-50/50 to-white shadow-xl shadow-amber-500/10">
-      <div className="mb-4 p-3 bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="border border-gray-200 rounded-lg p-2">
-          <QRCodeSVG 
-            value={formLink} 
-            size={200}
+    <div className="flex flex-col items-center p-4 sm:p-6 border border-amber-200 rounded-2xl bg-gradient-to-br from-amber-50/50 to-white shadow-xl shadow-amber-500/10">
+      <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="border border-gray-200 rounded-lg p-1 sm:p-2">
+          <QRCodeSVG
+            value={formLink}
+            size={window.innerWidth < 640 ? 160 : 200}
             level="H"
             includeMargin={true}
             renderAs="svg"
@@ -55,17 +56,18 @@ const BarcodeDisplay = ({ code, formLink, reward }: BarcodeDisplayProps) => {
           />
         </div>
       </div>
-      <div className="text-lg font-mono font-bold text-amber-800 mb-3 bg-amber-100 px-4 py-2 rounded-full border border-amber-200">{code}</div>
-      <div className="text-xs text-gray-600 break-all max-w-[220px] text-center mb-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
+      <div className="text-base sm:text-lg font-mono font-bold text-amber-800 mb-2 sm:mb-3 bg-amber-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-amber-200">
+        {code}
+      </div>
+      <div className="text-xs text-gray-600 break-all max-w-[180px] sm:max-w-[220px] text-center mb-2 sm:mb-3 bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-200">
         {formLink}
       </div>
-      <div className="text-sm text-emerald-700 font-bold bg-emerald-100 px-4 py-2 rounded-full border border-emerald-300">
-        🎁 ₹{reward} Reward {/* Change from hardcoded ₹100 to dynamic reward */}
+      <div className="text-xs sm:text-sm text-emerald-700 font-bold bg-emerald-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-300">
+        🎁 ₹{reward} Reward
       </div>
     </div>
   )
 }
-
 
 export default function PremiumTrackingSystem() {
   const [coupons, setCoupons] = useState<Coupon[]>([])
@@ -82,24 +84,27 @@ export default function PremiumTrackingSystem() {
     try {
       const response = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=${COUPONS_SHEET}&action=fetch`)
       const result = await response.json()
-      
+
       if (result.success && result.data) {
-        const couponData = result.data.slice(1).map((row: any[], index: number) => ({
-          id: `coupon_${index + 1}`,
-          created: row[0] || '',
-          code: row[1] || '',
-          status: (row[2] || 'unused').toLowerCase(),
-          reward: parseFloat(row[3]) || 0,
-          claimedBy: row[4] || null,
-          claimedAt: row[5] || null,
-          rowIndex: index + 2
-        })).filter((coupon: Coupon) => coupon.code && coupon.status !== 'deleted')
-        
+        const couponData = result.data
+          .slice(1)
+          .map((row: any[], index: number) => ({
+            id: `coupon_${index + 1}`,
+            created: row[0] || "",
+            code: row[1] || "",
+            status: (row[2] || "unused").toLowerCase(),
+            reward: Number.parseFloat(row[3]) || 0,
+            claimedBy: row[4] || null,
+            claimedAt: row[5] || null,
+            rowIndex: index + 2,
+          }))
+          .filter((coupon: Coupon) => coupon.code && coupon.status !== "deleted")
+
         setCoupons(couponData)
       }
     } catch (error) {
-      console.error('Error fetching coupons:', error)
-      alert('Error fetching coupons from Google Sheets')
+      console.error("Error fetching coupons:", error)
+      alert("Error fetching coupons from Google Sheets")
     }
   }
 
@@ -108,28 +113,29 @@ export default function PremiumTrackingSystem() {
     try {
       const response = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=${CONSUMERS_SHEET}&action=fetch`)
       const result = await response.json()
-      
+
       if (result.success && result.data) {
-        const consumerData = result.data.slice(1).map((row: any[], index: number) => ({
-          name: row[4] || '',
-          phone: row[6] || '',
-          email: row[7] || '',
-          couponCode: row[1] || '',
-          date: row[5] || '',
-          rowIndex: index + 2
-        })).filter((consumer: Consumer) => consumer.name && consumer.couponCode)
-        
+        const consumerData = result.data
+          .slice(1)
+          .map((row: any[], index: number) => ({
+            name: row[4] || "",
+            phone: row[6] || "",
+            email: row[7] || "",
+            couponCode: row[1] || "",
+            date: row[5] || "",
+            rowIndex: index + 2,
+          }))
+          .filter((consumer: Consumer) => consumer.name && consumer.couponCode)
+
         setConsumers(consumerData)
       }
     } catch (error) {
-      console.error('Error fetching consumers:', error)
-      // Don't show alert for consumers as it might not exist yet
+      console.error("Error fetching consumers:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Load data from Google Sheets on component mount
   useEffect(() => {
     const fetchData = async () => {
       await fetchCoupons()
@@ -138,7 +144,6 @@ export default function PremiumTrackingSystem() {
     fetchData()
   }, [])
 
-  // Refresh data from Google Sheets
   const refreshData = async (): Promise<void> => {
     setIsLoading(true)
     await fetchCoupons()
@@ -149,17 +154,16 @@ export default function PremiumTrackingSystem() {
     return `${window.location.origin}/redeem?code=${couponCode}`
   }
 
-const downloadBarcodes = (): void => {
-  const barcodesToDownload =
-    selectedCoupons.length > 0
-      ? coupons.filter((c) => selectedCoupons.includes(c.code))
-      : coupons.filter((c) => c.status === "unused")
+  const downloadBarcodes = (): void => {
+    const barcodesToDownload =
+      selectedCoupons.length > 0
+        ? coupons.filter((c) => selectedCoupons.includes(c.code))
+        : coupons.filter((c) => c.status === "unused")
 
-  // Create a new window with enhanced QR codes for printing
-  const printWindow = window.open("", "_blank")
-  if (!printWindow) return
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
 
-  const barcodeHTML = `
+    const barcodeHTML = `
     <!DOCTYPE html>
     <html>
       <head>
@@ -285,7 +289,6 @@ const downloadBarcodes = (): void => {
         </div>
         
         <script>
-          // Generate QR codes after page loads
           window.onload = function() {
             ${barcodesToDownload
               .map((coupon) => {
@@ -317,9 +320,9 @@ const downloadBarcodes = (): void => {
     </html>
   `
 
-  printWindow.document.write(barcodeHTML)
-  printWindow.document.close()
-}
+    printWindow.document.write(barcodeHTML)
+    printWindow.document.close()
+  }
 
   const toggleCouponSelection = (couponCode: string): void => {
     setSelectedCoupons((prev) =>
@@ -332,7 +335,6 @@ const downloadBarcodes = (): void => {
     setSelectedCoupons(unusedCodes)
   }
 
-  // Filter coupons based on search term and status
   const filteredCoupons = coupons.filter((coupon) => {
     const matchesSearch =
       coupon.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -341,13 +343,11 @@ const downloadBarcodes = (): void => {
     return matchesSearch && matchesStatus
   })
 
-  // Calculate statistics
   const totalCoupons = coupons.length
   const usedCoupons = coupons.filter((c) => c.status === "used").length
   const unusedCoupons = coupons.filter((c) => c.status === "unused").length
-  const totalRewards = coupons.filter(c => c.status === "used").reduce((sum, coupon) => sum + coupon.reward, 0)
+  const totalRewards = coupons.filter((c) => c.status === "used").reduce((sum, coupon) => sum + coupon.reward, 0)
 
-  // Export data as CSV
   const exportData = (): void => {
     const csvContent = [
       ["Coupon Code", "Status", "Claimed By", "Phone", "Email", "Date Claimed", "Reward Amount", "Form Link"],
@@ -355,8 +355,8 @@ const downloadBarcodes = (): void => {
         coupon.code,
         coupon.status,
         coupon.claimedBy || "",
-        consumers.find(c => c.couponCode === coupon.code)?.phone || "",
-        consumers.find(c => c.couponCode === coupon.code)?.email || "",
+        consumers.find((c) => c.couponCode === coupon.code)?.phone || "",
+        consumers.find((c) => c.couponCode === coupon.code)?.email || "",
         coupon.claimedAt || "",
         coupon.status === "used" ? `₹${coupon.reward}` : "₹0",
         getFormLink(coupon.code),
@@ -376,79 +376,83 @@ const downloadBarcodes = (): void => {
 
   if (isLoading && coupons.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 flex items-center justify-center p-4">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-amber-600 mx-auto mb-4" />
-          <div className="text-lg font-semibold text-gray-700">Loading tracking data...</div>
-          <div className="text-sm text-gray-500 mt-2">Fetching coupons and consumer data from Google Sheets</div>
+          <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-amber-600 mx-auto mb-4" />
+          <div className="text-base sm:text-lg font-semibold text-gray-700">Loading tracking data...</div>
+          <div className="text-xs sm:text-sm text-gray-500 mt-2 px-4">
+            Fetching coupons and consumer data from Google Sheets
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden h-28 sm:h-32">
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 p-3 sm:p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
-            <CardHeader className="pb-2 pt-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Coupons</CardTitle>
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4 md:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total Coupons</CardTitle>
             </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">{totalCoupons}</div>
+            <CardContent className="pb-3 px-3 sm:px-4 md:px-6">
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{totalCoupons}</div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden h-28 sm:h-32">
+          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600"></div>
-            <CardHeader className="pb-2 pt-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Used Coupons</CardTitle>
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4 md:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Used Coupons</CardTitle>
             </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-xl sm:text-2xl font-bold text-emerald-600">{usedCoupons}</div>
+            <CardContent className="pb-3 px-3 sm:px-4 md:px-6">
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-emerald-600">{usedCoupons}</div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden h-28 sm:h-32">
+          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-amber-600"></div>
-            <CardHeader className="pb-2 pt-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Unused Coupons</CardTitle>
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4 md:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Unused Coupons</CardTitle>
             </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-xl sm:text-2xl font-bold text-amber-600">{unusedCoupons}</div>
+            <CardContent className="pb-3 px-3 sm:px-4 md:px-6">
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-amber-600">{unusedCoupons}</div>
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden h-28 sm:h-32">
+          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm rounded-xl sm:rounded-2xl overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-400 to-purple-600"></div>
-            <CardHeader className="pb-2 pt-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Rewards</CardTitle>
+            <CardHeader className="pb-2 pt-3 px-3 sm:px-4 md:px-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Total Rewards</CardTitle>
             </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-xl sm:text-2xl font-bold text-purple-600">₹{totalRewards}</div>
+            <CardContent className="pb-3 px-3 sm:px-4 md:px-6">
+              <div className="text-lg sm:text-xl md:text-2xl font-bold text-purple-600">₹{totalRewards}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Tracking Table */}
-        <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden">
+        <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-sm rounded-2xl sm:rounded-3xl overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400"></div>
-          
-          <CardHeader className="px-6 sm:px-8 py-8">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+
+          <CardHeader className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6">
               <div>
-                <CardTitle className="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">Premium Tracking System</CardTitle>
-                <CardDescription className="text-gray-600 text-base">Complete overview of all coupons, their status, and consumer details</CardDescription>
+                <CardTitle className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 mb-1 sm:mb-2">
+                  Premium Tracking System
+                </CardTitle>
+                <CardDescription className="text-sm sm:text-base text-gray-600">
+                  Complete overview of all coupons, their status, and consumer details
+                </CardDescription>
               </div>
-              <div className="flex flex-wrap gap-3">
-                <Button 
-                  onClick={refreshData} 
+              <div className="flex flex-wrap gap-2 sm:gap-3 w-full lg:w-auto">
+                <Button
+                  onClick={refreshData}
                   disabled={isLoading}
-                  variant="outline" 
-                  size="sm" 
-                  className="rounded-xl border-gray-200 hover:bg-gray-50"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl border-gray-200 hover:bg-gray-50 min-h-[44px] px-3 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-initial bg-transparent"
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -457,15 +461,29 @@ const downloadBarcodes = (): void => {
                   )}
                   Refresh
                 </Button>
-                <Button onClick={() => setShowBarcodes(!showBarcodes)} variant="outline" size="sm" className="rounded-xl border-gray-200 hover:bg-gray-50">
+                <Button
+                  onClick={() => setShowBarcodes(!showBarcodes)}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl border-gray-200 hover:bg-gray-50 min-h-[44px] px-3 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-initial"
+                >
                   <Eye className="h-4 w-4 mr-2" />
                   {showBarcodes ? "Hide" : "Show"} Barcodes
                 </Button>
-                <Button onClick={downloadBarcodes} className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl shadow-lg" size="sm">
+                <Button
+                  onClick={downloadBarcodes}
+                  className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl shadow-lg min-h-[44px] px-3 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-initial"
+                  size="sm"
+                >
                   <QrCode className="h-4 w-4 mr-2" />
                   Download ({selectedCoupons.length || unusedCoupons})
                 </Button>
-                <Button onClick={exportData} variant="outline" size="sm" className="rounded-xl border-gray-200 hover:bg-gray-50">
+                <Button
+                  onClick={exportData}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl border-gray-200 hover:bg-gray-50 min-h-[44px] px-3 sm:px-4 text-xs sm:text-sm flex-1 sm:flex-initial bg-transparent"
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Export CSV
                 </Button>
@@ -473,24 +491,23 @@ const downloadBarcodes = (): void => {
             </div>
           </CardHeader>
 
-          <CardContent className="px-6 sm:px-8 pb-8">
-            {/* Search and Filter Controls */}
-            <div className="flex flex-col lg:flex-row gap-4 mb-8">
+          <CardContent className="px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6 md:mb-8">
               <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 <Input
                   placeholder="Search by coupon code or consumer name..."
                   value={searchTerm}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                  className="pl-12 py-4 rounded-xl border-gray-200 bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200"
+                  className="pl-10 sm:pl-12 py-3 sm:py-4 rounded-xl border-gray-200 bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all duration-200 text-sm sm:text-base min-h-[44px]"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 sm:gap-2">
                 <Button
                   variant={filterStatus === "all" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilterStatus("all")}
-                  className={`rounded-xl ${filterStatus === "all" ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white" : "border-gray-200 hover:bg-gray-50"}`}
+                  className={`rounded-xl flex-1 sm:flex-initial min-h-[44px] px-4 sm:px-6 text-xs sm:text-sm ${filterStatus === "all" ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white" : "border-gray-200 hover:bg-gray-50"}`}
                 >
                   All
                 </Button>
@@ -498,7 +515,7 @@ const downloadBarcodes = (): void => {
                   variant={filterStatus === "used" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilterStatus("used")}
-                  className={`rounded-xl ${filterStatus === "used" ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white" : "border-gray-200 hover:bg-gray-50"}`}
+                  className={`rounded-xl flex-1 sm:flex-initial min-h-[44px] px-4 sm:px-6 text-xs sm:text-sm ${filterStatus === "used" ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white" : "border-gray-200 hover:bg-gray-50"}`}
                 >
                   Used
                 </Button>
@@ -506,7 +523,7 @@ const downloadBarcodes = (): void => {
                   variant={filterStatus === "unused" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilterStatus("unused")}
-                  className={`rounded-xl ${filterStatus === "unused" ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white" : "border-gray-200 hover:bg-gray-50"}`}
+                  className={`rounded-xl flex-1 sm:flex-initial min-h-[44px] px-4 sm:px-6 text-xs sm:text-sm ${filterStatus === "unused" ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white" : "border-gray-200 hover:bg-gray-50"}`}
                 >
                   Unused
                 </Button>
@@ -514,41 +531,51 @@ const downloadBarcodes = (): void => {
             </div>
 
             {coupons.length > 0 && (
-              <div className="flex flex-wrap gap-3 mb-6">
-                <Button onClick={selectAllUnused} variant="outline" size="sm" className="rounded-xl border-gray-200 hover:bg-gray-50">
+              <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
+                <Button
+                  onClick={selectAllUnused}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl border-gray-200 hover:bg-gray-50 min-h-[44px] px-3 sm:px-4 text-xs sm:text-sm bg-transparent"
+                >
                   Select All Unused ({unusedCoupons})
                 </Button>
-                <Button onClick={() => setSelectedCoupons([])} variant="outline" size="sm" className="rounded-xl border-gray-200 hover:bg-gray-50">
+                <Button
+                  onClick={() => setSelectedCoupons([])}
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl border-gray-200 hover:bg-gray-50 min-h-[44px] px-3 sm:px-4 text-xs sm:text-sm"
+                >
                   Clear Selection
                 </Button>
-                <span className="text-sm text-gray-500 self-center bg-gray-100 px-3 py-1 rounded-full">{selectedCoupons.length} selected</span>
+                <span className="text-xs sm:text-sm text-gray-500 self-center bg-gray-100 px-3 py-2 rounded-full">
+                  {selectedCoupons.length} selected
+                </span>
               </div>
             )}
 
             {showBarcodes && filteredCoupons.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-6 text-gray-800">Premium Barcode View</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="mb-6 sm:mb-8">
+                <h3 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-gray-800">Premium Barcode View</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                   {filteredCoupons.map((coupon) => (
-  <BarcodeDisplay 
-    key={coupon.code} 
-    code={coupon.code} 
-    formLink={getFormLink(coupon.code)} 
-    reward={coupon.reward} // Pass the actual reward amount
-  />
-))}
+                    <BarcodeDisplay
+                      key={coupon.code}
+                      code={coupon.code}
+                      formLink={getFormLink(coupon.code)}
+                      reward={coupon.reward}
+                    />
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Enhanced Table for Desktop */}
             <div className="hidden lg:block">
               <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                 <div className="max-h-96 overflow-auto">
                   <Table>
                     <TableHeader className="sticky top-0 bg-gray-50/95 backdrop-blur-sm z-10">
                       <TableRow className="border-gray-200">
-                        {/* <TableHead className="w-[60px] py-4">Select</TableHead> */}
                         <TableHead className="w-[140px] py-4">Coupon Code</TableHead>
                         <TableHead className="w-[100px] py-4">Status</TableHead>
                         <TableHead className="py-4">Consumer Name</TableHead>
@@ -561,26 +588,20 @@ const downloadBarcodes = (): void => {
                     <TableBody>
                       {filteredCoupons.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-12 text-gray-500">
-                            {coupons.length === 0 ? "No coupons generated yet" : "No coupons match your search criteria"}
+                          <TableCell colSpan={7} className="text-center py-12 text-gray-500">
+                            {coupons.length === 0
+                              ? "No coupons generated yet"
+                              : "No coupons match your search criteria"}
                           </TableCell>
                         </TableRow>
                       ) : (
                         filteredCoupons.map((coupon) => {
-                          const consumer = consumers.find(c => c.couponCode === coupon.code)
+                          const consumer = consumers.find((c) => c.couponCode === coupon.code)
                           return (
                             <TableRow key={coupon.code} className="border-gray-100 hover:bg-gray-50/50">
-                              {/* <TableCell className="py-4">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedCoupons.includes(coupon.code)}
-                                  onChange={() => toggleCouponSelection(coupon.code)}
-                                  className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
-                                />
-                              </TableCell> */}
                               <TableCell className="font-mono text-sm py-4">{coupon.code}</TableCell>
                               <TableCell className="py-4">
-                                <Badge 
+                                <Badge
                                   variant={coupon.status === "used" ? "default" : "secondary"}
                                   className={`rounded-full ${coupon.status === "used" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-700 border-gray-200"}`}
                                 >
@@ -608,51 +629,75 @@ const downloadBarcodes = (): void => {
               </div>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="lg:hidden space-y-4">
+            <div className="lg:hidden space-y-3 sm:space-y-4">
               {filteredCoupons.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-gray-500 text-sm sm:text-base">
                   {coupons.length === 0 ? "No coupons generated yet" : "No coupons match your search criteria"}
                 </div>
               ) : (
                 filteredCoupons.map((coupon) => {
-                  const consumer = consumers.find(c => c.couponCode === coupon.code)
+                  const consumer = consumers.find((c) => c.couponCode === coupon.code)
                   return (
-                    <Card key={coupon.code} className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
+                    <Card
+                      key={coupon.code}
+                      className="border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm"
+                    >
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex items-start justify-between mb-3 sm:mb-4">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                             <input
                               type="checkbox"
                               checked={selectedCoupons.includes(coupon.code)}
                               onChange={() => toggleCouponSelection(coupon.code)}
-                              className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                              className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 min-w-[20px] min-h-[20px] sm:min-w-[24px] sm:min-h-[24px]"
                             />
-                            <div>
-                              <div className="font-mono text-sm font-medium text-gray-900">{coupon.code}</div>
-                              <Badge 
+                            <div className="min-w-0 flex-1">
+                              <div className="font-mono text-xs sm:text-sm font-medium text-gray-900 break-all">
+                                {coupon.code}
+                              </div>
+                              <Badge
                                 variant={coupon.status === "used" ? "default" : "secondary"}
-                                className={`rounded-full mt-1 ${coupon.status === "used" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-700 border-gray-200"}`}
+                                className={`rounded-full mt-1 text-xs ${coupon.status === "used" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-700 border-gray-200"}`}
                               >
                                 {coupon.status === "used" ? "Used" : "Unused"}
                               </Badge>
                             </div>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right ml-2">
                             {coupon.status === "used" ? (
-                              <span className="text-emerald-600 font-semibold">₹{coupon.reward}</span>
+                              <span className="text-emerald-600 font-semibold text-sm sm:text-base">
+                                ₹{coupon.reward}
+                              </span>
                             ) : (
-                              <span className="text-gray-400">₹0</span>
+                              <span className="text-gray-400 text-sm sm:text-base">₹{coupon.reward}</span>
                             )}
                           </div>
                         </div>
-                        
+
                         {(coupon.claimedBy || consumer) && (
-                          <div className="space-y-2 text-sm">
-                            <div><span className="text-gray-500">Name:</span> <span className="text-gray-900">{coupon.claimedBy || consumer?.name}</span></div>
-                            {consumer?.phone && <div><span className="text-gray-500">Phone:</span> <span className="text-gray-900">{consumer.phone}</span></div>}
-                            {consumer?.email && <div><span className="text-gray-500">Email:</span> <span className="text-gray-900">{consumer.email}</span></div>}
-                            {(coupon.claimedAt || consumer?.date) && <div><span className="text-gray-500">Date:</span> <span className="text-gray-900">{coupon.claimedAt || consumer?.date}</span></div>}
+                          <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                            <div>
+                              <span className="text-gray-500">Name:</span>{" "}
+                              <span className="text-gray-900">{coupon.claimedBy || consumer?.name}</span>
+                            </div>
+                            {consumer?.phone && (
+                              <div>
+                                <span className="text-gray-500">Phone:</span>{" "}
+                                <span className="text-gray-900">{consumer.phone}</span>
+                              </div>
+                            )}
+                            {consumer?.email && (
+                              <div className="break-all">
+                                <span className="text-gray-500">Email:</span>{" "}
+                                <span className="text-gray-900">{consumer.email}</span>
+                              </div>
+                            )}
+                            {(coupon.claimedAt || consumer?.date) && (
+                              <div>
+                                <span className="text-gray-500">Date:</span>{" "}
+                                <span className="text-gray-900">{coupon.claimedAt || consumer?.date}</span>
+                              </div>
+                            )}
                           </div>
                         )}
                       </CardContent>
@@ -664,17 +709,20 @@ const downloadBarcodes = (): void => {
           </CardContent>
         </Card>
 
-        {/* Consumer Details Table */}
         {consumers.length > 0 && (
-          <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-sm rounded-3xl overflow-hidden">
+          <Card className="border-0 shadow-2xl bg-white/90 backdrop-blur-sm rounded-2xl sm:rounded-3xl overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400"></div>
-            
-            <CardHeader className="px-6 sm:px-8 py-8">
-              <CardTitle className="text-xl sm:text-2xl font-semibold text-gray-800 mb-2">Consumer Details</CardTitle>
-              <CardDescription className="text-gray-600 text-base">All consumers who have claimed premium rewards</CardDescription>
+
+            <CardHeader className="px-4 sm:px-6 md:px-8 py-4 sm:py-6 md:py-8">
+              <CardTitle className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800 mb-1 sm:mb-2">
+                Consumer Details
+              </CardTitle>
+              <CardDescription className="text-sm sm:text-base text-gray-600">
+                All consumers who have claimed premium rewards
+              </CardDescription>
             </CardHeader>
-            
-            <CardContent className="px-6 sm:px-8 pb-8">
+
+            <CardContent className="px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8">
               {/* Desktop Consumer Table */}
               <div className="hidden lg:block">
                 <div className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
@@ -692,15 +740,19 @@ const downloadBarcodes = (): void => {
                       </TableHeader>
                       <TableBody>
                         {consumers.map((consumer, index) => {
-                          const coupon = coupons.find(c => c.code === consumer.couponCode)
+                          const coupon = coupons.find((c) => c.code === consumer.couponCode)
                           return (
                             <TableRow key={index} className="border-gray-100 hover:bg-gray-50/50">
                               <TableCell className="font-medium py-4 text-gray-900">{consumer.name}</TableCell>
                               <TableCell className="py-4 text-gray-700">{consumer.phone}</TableCell>
                               <TableCell className="py-4 text-gray-700">{consumer.email}</TableCell>
-                              <TableCell className="font-mono text-sm py-4 text-gray-900">{consumer.couponCode}</TableCell>
+                              <TableCell className="font-mono text-sm py-4 text-gray-900">
+                                {consumer.couponCode}
+                              </TableCell>
                               <TableCell className="py-4 text-gray-700">{consumer.date}</TableCell>
-                              <TableCell className="text-right font-semibold py-4 text-emerald-600">₹{coupon?.reward || 100}</TableCell>
+                              <TableCell className="text-right font-semibold py-4 text-emerald-600">
+                                ₹{coupon?.reward || 100}
+                              </TableCell>
                             </TableRow>
                           )
                         })}
@@ -710,25 +762,42 @@ const downloadBarcodes = (): void => {
                 </div>
               </div>
 
-              {/* Mobile Consumer Cards */}
-              <div className="lg:hidden space-y-4">
+              <div className="lg:hidden space-y-3 sm:space-y-4">
                 {consumers.map((consumer, index) => {
-                  const coupon = coupons.find(c => c.code === consumer.couponCode)
+                  const coupon = coupons.find((c) => c.code === consumer.couponCode)
                   return (
-                    <Card key={index} className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <div className="font-medium text-gray-900 text-lg">{consumer.name}</div>
-                            <div className="font-mono text-sm text-gray-600 mt-1">{consumer.couponCode}</div>
+                    <Card
+                      key={index}
+                      className="border border-gray-200 rounded-xl sm:rounded-2xl overflow-hidden shadow-sm"
+                    >
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex items-start justify-between mb-3 sm:mb-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 text-base sm:text-lg break-words">
+                              {consumer.name}
+                            </div>
+                            <div className="font-mono text-xs sm:text-sm text-gray-600 mt-1 break-all">
+                              {consumer.couponCode}
+                            </div>
                           </div>
-                          <div className="text-emerald-600 font-semibold text-lg">₹{coupon?.reward || 100}</div>
+                          <div className="text-emerald-600 font-semibold text-base sm:text-lg ml-2">
+                            ₹{coupon?.reward || 100}
+                          </div>
                         </div>
-                        
-                        <div className="space-y-2 text-sm">
-                          <div><span className="text-gray-500">Phone:</span> <span className="text-gray-900">{consumer.phone}</span></div>
-                          <div><span className="text-gray-500">Email:</span> <span className="text-gray-900">{consumer.email}</span></div>
-                          <div><span className="text-gray-500">Date:</span> <span className="text-gray-900">{consumer.date}</span></div>
+
+                        <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                          <div>
+                            <span className="text-gray-500">Phone:</span>{" "}
+                            <span className="text-gray-900">{consumer.phone}</span>
+                          </div>
+                          <div className="break-all">
+                            <span className="text-gray-500">Email:</span>{" "}
+                            <span className="text-gray-900">{consumer.email}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Date:</span>{" "}
+                            <span className="text-gray-900">{consumer.date}</span>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
